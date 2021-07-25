@@ -5,17 +5,23 @@ Here is what every option means:
 
 ### Minimum Configuration
 
-| Name               |   Type       | Default      | Description                                                             |
-| ------------------ | :----------: | ------------ | ----------------------------------------------------------------------- |
-| `climatedevice`    | `string`     | **Required** | An entity_id within the `climate` domain.                               |
-| `zoneswitch`       | `string`     | **Required** | An entity_id within the `switch` domain.                                |
-| `localtempsensor`  | `string`     | **Required** | An entity_id that has a temperature as its state.                       |
-| `localtargettemp`  | `string`     | **Required** | An entity_id that has a temperature or number as its state.             |
-| `manualoverride`   | `string`     | Optional     | Entity_id of an input_boolean                                           |
-| `autofanoverride`  | `bool`       | Optional     | Set fan to matching Auto mode (Low/Auto, Mid/Auto, High/Auto) on change |
-| `coolingoffset`    | `object`     | Optional     | Temperature offset object. If no object provided defaults to 1.0        |
-| `heatingoffset`    | `object`     | Optional     | Temperature offset object. If no object provided defaults to 1.0        |
-| `conditions`       | `object`     | Optional     | Condition object. Multiple conditions can be specified                  |
+| Name                |   Type       | Default      | Description                                                             |
+| ------------------- | :----------: | ------------ | ----------------------------------------------------------------------- |
+| `climatedevice`     | `string`     | **Required** | An entity_id within the `climate` domain.                               |
+| `exteriortempsensor`| `string`     | **Required** | An entity_id with a temperature value as state                          |
+| `force_auto_fan`    | `bool`       | False        | Whether the fan should be set to an auto mode.                          |
+| `zone`              | `object`     | **Required** | Zone objects that will be controlled                                    |
+
+### Zone Object
+
+| `friendly_name`     | `string`     | **Required** | Name of the zone                                                         |
+| `zone_switch`       | `string`     | **Required** | An entity_id within the `switch` domain.                                 |
+| `local_tempsensor`  | `string`     | **Required** | An entity_id that has a temperature as its state.                        |
+| `target_temp`       | `string`     | **Required** | An entity_id that has a temperature or number as its state.              |
+| `manual_override`   | `string`     | Optional     | Entity_id of an input_boolean                                            |
+| `coolingoffset`     | `object`     | Optional     | Temperature offset object. If no object provided defaults to 0.3         |
+| `heatingoffset`     | `object`     | Optional     | Temperature offset object. If no object provided defaults to 0.3         |
+| `conditions`        | `object`     | Optional     | Condition object. Multiple conditions can be specified                   |
 
 
 ### Temperature Offset Object                                                                                    
