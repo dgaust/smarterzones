@@ -17,7 +17,12 @@ class smarterzones(hass.Hass):
       try:
         self.climatedevice = self.args.get('climatedevice')
         self.exterior_temperature = self.args.get('exteriortempsensor')
-        self.forceautofan = self.args.get('force_auto_fan')
+        
+        try:
+            self.forceautofan = self.args.get('force_auto_fan')
+        except:
+            self.forceautofan = False
+
         self.log("Climate device is: " + self.climatedevice)
         
         # Hook up a listener for the climate device
@@ -40,11 +45,14 @@ class smarterzones(hass.Hass):
           self.log(ex)
 
       for zone in self.zones:
-          self.log("New Zone found: " + zone['friendly_name'])
-          self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
-          self.listen_state(self.target_temp_change, zone['target_temp'])
-          self.listen_state(self.manual_override_change, zone['manual_override'])
-          self.automatically_manage_zone(zone)
+            self.log("New Zone found: " + zone['friendly_name'])
+            self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
+            self.listen_state(self.target_temp_change, zone['target_temp'])
+            try:
+                self.listen_state(self.manual_override_change, zone['manual_override'])
+            except:
+                pass
+            self.automatically_manage_zone(zone)
 
 
     # Climate Device Listeners
@@ -200,4 +208,3 @@ class smarterzones(hass.Hass):
                 return ACMODE.COOLING
             elif outside_temperature < target_temperature:
                 return ACMODE.HEATING
- 
