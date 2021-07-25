@@ -18,7 +18,6 @@ class smarterzones(hass.Hass):
         self.climatedevice = self.args.get('climatedevice')
         self.exterior_temperature = self.args.get('exteriortempsensor')
         self.forceautofan = self.args.get('force_auto_fan', False)
-
         self.log("Climate device is: " + self.climatedevice)
         
         # Hook up a listener for the climate device
@@ -117,17 +116,17 @@ class smarterzones(hass.Hass):
         if coolingmode == ACMODE.COOLING:
             # Check if zone is above the wanted temperature and if so, open the zone to cool      
             if current_zone_temperature >= maxtemp:
-                self.log("We're cooling and " + str(current_zone_temperature) + " is above " + str(maxtemp) + ". So turning on")
+                self.log("We're cooling and " + str(current_zone_temperature) + " is above or equal to" + str(maxtemp) + ". So turning on")
                 self.switchon(zone)
             elif current_zone_temperature <= mintemp:
-                self.log("We're cooling and " + str(current_zone_temperature) + " is below " + str(mintemp) + ". So turning off")             
+                self.log("We're cooling and " + str(current_zone_temperature) + " is below or equal to " + str(mintemp) + ". So turning off")             
                 self.switchoff(zone)
         elif coolingmode == ACMODE.HEATING:
             if current_zone_temperature <= mintemp:
-                self.log("We're heating and " + str(current_zone_temperature) + " is below " + str(mintemp) + ". So turning on")             
+                self.log("We're heating and " + str(current_zone_temperature) + " is below or equal to " + str(mintemp) + ". So turning on")             
                 self.switchon(zone)
             elif current_zone_temperature >= maxtemp:
-                self.log("We're heating and " + str(current_zone_temperature) + " is above " + str(maxtemp) + ". So turning off")             
+                self.log("We're heating and " + str(current_zone_temperature) + " is above or equal to " + str(maxtemp) + ". So turning off")             
                 self.switchoff(zone)
         else:
             # what do we want to do with drying, I think turn all zones on
@@ -204,3 +203,4 @@ class smarterzones(hass.Hass):
                 return ACMODE.COOLING
             elif outside_temperature < target_temperature:
                 return ACMODE.HEATING
+ 
