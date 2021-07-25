@@ -14,6 +14,8 @@ Here is what every option means:
 
 ### Zone Object
 
+| Name                |   Type       | Default      | Description                                                              |
+| ------------------- | :----------: | ------------ | ------------------------------------------------------------------------ |
 | `friendly_name`     | `string`     | **Required** | Name of the zone                                                         |
 | `zone_switch`       | `string`     | **Required** | An entity_id within the `switch` domain.                                 |
 | `local_tempsensor`  | `string`     | **Required** | An entity_id that has a temperature as its state.                        |
