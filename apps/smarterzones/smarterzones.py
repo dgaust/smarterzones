@@ -17,11 +17,7 @@ class smarterzones(hass.Hass):
       try:
         self.climatedevice = self.args.get('climatedevice')
         self.exterior_temperature = self.args.get('exteriortempsensor')
-        
-        try:
-            self.forceautofan = self.args.get('force_auto_fan')
-        except:
-            self.forceautofan = False
+        self.forceautofan = self.args.get('force_auto_fan', False)
 
         self.log("Climate device is: " + self.climatedevice)
         
