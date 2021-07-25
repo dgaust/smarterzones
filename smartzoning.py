@@ -1,7 +1,6 @@
 from typing import List
 import appdaemon.plugins.hass.hassapi as hass
 import time
-# import random
 import json
 from enum import Enum
 
@@ -10,7 +9,7 @@ class ACMODE(Enum):
     HEATING = 2
     OTHER = 3
 
-class smartzoning(hass.Hass): 
+class smarterzones(hass.Hass): 
     
     def initialize(self):   
     
@@ -46,13 +45,6 @@ class smartzoning(hass.Hass):
           self.listen_state(self.target_temp_change, zone['target_temp'])
           self.listen_state(self.manual_override_change, zone['manual_override'])
           self.automatically_manage_zone(zone)
-
-    #  Just to force state changes for testing
-      
-    #  self.randomdelay = random.randrange(15,32)
-    #  self.set_state("sensor.media_room_temperature_sensor", state=str(self.randomdelay))
-    #  self.set_state("sensor.lounge_average_temperature", state=str(self.randomdelay))
-
 
     # Climate Device Listeners
     def climatefanchange(self, entity, attribute, old, new, kwargs):
