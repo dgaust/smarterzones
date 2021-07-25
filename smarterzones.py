@@ -1,6 +1,7 @@
 from typing import List
 import appdaemon.plugins.hass.hassapi as hass
 import time
+# import random
 import json
 from enum import Enum
 
@@ -46,6 +47,13 @@ class smarterzones(hass.Hass):
           self.listen_state(self.manual_override_change, zone['manual_override'])
           self.automatically_manage_zone(zone)
 
+    #  Just to force state changes for testing
+      
+    #  self.randomdelay = random.randrange(15,32)
+    #  self.set_state("sensor.media_room_temperature_sensor", state=str(self.randomdelay))
+    #  self.set_state("sensor.lounge_average_temperature", state=str(self.randomdelay))
+
+
     # Climate Device Listeners
     def climatefanchange(self, entity, attribute, old, new, kwargs):
         ison = self.get_state(entity)
@@ -78,7 +86,7 @@ class smarterzones(hass.Hass):
         for zone in self.zones:
             if zone["manual_override"] == str(entity):
                 self.automatically_manage_zone(zone)
-                
+
     # Exterior temperature sensor monitor - for future use       
     def outside_climate_change(self, entity, attribute, old, new, kwargs):
        self.log("Outside Temperature Changed: " + entity)
