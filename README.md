@@ -16,7 +16,7 @@ Here is what every option means:
 
 | Name                |   Type       | Default      | Description                                                              |
 | ------------------- | :----------: | ------------ | ------------------------------------------------------------------------ |
-| `friendly_name`     | `string`     | **Required** | Name of the zone                                                         |
+| `name`     | `string`     | **Required** | Name of the zone                                                         |
 | `zone_switch`       | `string`     | **Required** | An entity_id within the `switch` domain.                                 |
 | `local_tempsensor`  | `string`     | **Required** | An entity_id that has a temperature as its state.                        |
 | `target_temp`       | `string`     | **Required** | An entity_id that has a temperature or number as its state.              |
@@ -48,7 +48,7 @@ smarterzones:
   exteriortempsensor: sensor.bellambi_temp
   force_auto_fan: true
   zones:
-    - friendly_name: "Alex Smart Zone"
+    - name: "Alex Smart Zone"
       zone_switch: switch.daikin_ac_alex
       local_tempsensor: sensor.alex_temp_sensor_sonoff
       manual_override: input_boolean.alexsmartzone
@@ -62,7 +62,7 @@ smarterzones:
       conditions:
         - entity: binary_sensor.alex_window_sensor_2
           targetstate: "off"
-    - friendly_name: "Bridgets Smart Zone"
+    - name: "Bridgets Smart Zone"
       zone_switch: switch.daikin_ac_bridget
       local_tempsensor: sensor.bridgets_temperature_sensor
       manual_override: input_boolean.bridgetsmartzone
@@ -76,7 +76,7 @@ smarterzones:
       conditions:
         - entity: binary_sensor.bridget_window_sensor_2
           targetstate: "off"
-    - friendly_name: "Lounge Smart Zone"
+    - name: "Lounge Smart Zone"
       zone_switch: switch.daikin_ac_living
       local_tempsensor: sensor.lounge_average_temperature
       manual_override: input_boolean.loungesmartzone
@@ -87,7 +87,7 @@ smarterzones:
       heatingoffset:
         upperbound: 0.3
         lowerbound: 0.3
-    - friendly_name: "Guest Bedroom"
+    - name: "Guest Bedroom"
       zone_switch: switch.daikin_ac_guest
       local_tempsensor: sensor.spare_bedroom_temperature_sensor
       manual_override: input_boolean.guestsmartzone
@@ -103,7 +103,7 @@ smarterzones:
           targetstate: "off"
         - entity: input_boolean.guest_mode
           targetstate: "on"
-    - friendly_name: "Master Bedroom"
+    - name: "Master Bedroom"
       zone_switch: switch.daikin_ac_master
       local_tempsensor: sensor.master_bedroom_temperature_2
       manual_override: input_boolean.mastersmartzone
@@ -114,7 +114,7 @@ smarterzones:
       heatingoffset:
         upperbound: 0.3
         lowerbound: 0.3
-    - friendly_name: "Media Room"
+    - name: "Media Room"
       zone_switch: switch.daikin_ac_media
       local_tempsensor: sensor.media_room_temperature_sensor
       manual_override: input_boolean.mediasmartzone
