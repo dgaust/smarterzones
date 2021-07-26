@@ -37,7 +37,7 @@ class smarterzones(hass.Hass):
           self.queuedlogger(ex)
 
       for zone in self.zones:
-            self.queuedlogger("Monitoring new zone: " + zone['friendly_name'])
+            self.queuedlogger("Monitoring new zone: " + zone['name'])
             self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
             self.listen_state(self.target_temp_change, zone['target_temp'])
             try:
@@ -60,19 +60,19 @@ class smarterzones(hass.Hass):
     # Zone Listeners           
     def target_temp_change(self, entity, attribute, old, new, kwargs):
         for zone in self.zones:
-            self.queuedlogger(zone["friendly_name"]  + ": Wanted temperature in zone changed from " + str(old) + " to " + str(new))
+            self.queuedlogger(zone["name"]  + ": Wanted temperature in zone changed from " + str(old) + " to " + str(new))
             self.automatically_manage_zone(zone)
 
     def inroomtempchange(self, entity, attribute, old, new, kwargs):
        for zone in self.zones:
            if zone["local_tempsensor"] == str(entity):
-                self.queuedlogger(zone["friendly_name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
+                self.queuedlogger(zone["name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
                 self.automatically_manage_zone(zone)
 
     def manual_override_change(self, entity, attribute, old, new, kwargs):
         for zone in self.zones:
             if zone["manual_override"] == str(entity):
-                self.queuedlogger(zone["friendly_name"] + ": manual override switch changed from " + str(old) + " to " + str(new))
+                self.queuedlogger(zone["name"] + ": manual override switch changed from " + str(old) + " to " + str(new))
                 self.automatically_manage_zone(zone)
 
     # Exterior temperature sensor monitor - for future use       
@@ -81,7 +81,7 @@ class smarterzones(hass.Hass):
 
     # Zone Management
     def automatically_manage_zone(self, zone):     
-        zonename = zone["friendly_name"]
+        zonename = zone["name"]
         # If manual override exists and is enabled stop processing.
         
         if self.override_enabled(zone) is True:            
@@ -123,14 +123,14 @@ class smarterzones(hass.Hass):
         zone_switch = zone["zone_switch"]
         state = self.get_state(zone_switch)
         if state != "on":
-            self.queuedlogger(zone["friendly_name"] + ": zone is opening")
+            self.queuedlogger(zone["name"] + ": zone is opening")
             self.call_service("switch/turn_on", entity_id = zone_switch)
       
     def switchoff(self, zone):
         zone_switch = zone["zone_switch"]
         state = self.get_state(zone_switch)
         if state != "off":
-            self.queuedlogger(zone["friendly_name"] + ": zone is closing")
+            self.queuedlogger(zone["name"] + ": zone is closing")
             self.call_service("switch/turn_off", entity_id = zone_switch)
 
     # Zone Checks
@@ -163,7 +163,7 @@ class smarterzones(hass.Hass):
         return True
     
     def get_temperature_offsets(self, zone, mode):
-        zonename = zone["friendly_name"]
+        zonename = zone["name"]
         mode = self.heatingorcooling(mode, zone)
         if mode == ACMODE.COOLING or ACMODE.OTHER:
             try:
@@ -200,3 +200,4 @@ class smarterzones(hass.Hass):
     def queuedlogger(self, message):
         self.log(message)
         
+
