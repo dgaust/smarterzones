@@ -85,8 +85,7 @@ class smarterzones(hass.Hass):
 
     # Exterior temperature sensor monitor - for future use       
     def outside_climate_change(self, entity, attribute, old, new, kwargs):
-       self.log("Outside Temperature Changed: " + entity)
- 
+       self.log("Outside Temperature changed from " + str(old) + " to " + str(new))
 
     # Zone Management
     def automatically_manage_zone(self, zone):     
