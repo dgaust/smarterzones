@@ -124,14 +124,14 @@ class smarterzones(hass.Hass):
         state = self.get_state(zone_switch)
         if state != "on":
             self.queuedlogger(zone["friendly_name"] + ": zone is opening")
-            self.call_service("switch/turn_on", zone_switch)
+            self.call_service("switch/turn_on", entity_id = zone_switch)
       
     def switchoff(self, zone):
         zone_switch = zone["zone_switch"]
         state = self.get_state(zone_switch)
-        if state != "of":
+        if state != "off":
             self.queuedlogger(zone["friendly_name"] + ": zone is closing")
-            self.call_service("switch/turn_off", zone_switch)
+            self.call_service("switch/turn_off", entity_id = zone_switch)
 
     # Zone Checks
     def override_enabled(self, zone):       
