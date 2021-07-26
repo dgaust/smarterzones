@@ -55,7 +55,9 @@ class smarterzones(hass.Hass):
                 self.call_service("climate/set_fan_mode", entity_id = self.climatedevice, fan_mode = new + "/Auto")
 
     def climatedevicechange(self, entity, attribute, old, new, kwargs):
-        self.queuedlogger("Climate Device Changed: " + entity)
+        self.queuedlogger("Climate device change state. Setting up zones appropriately.")
+        for zone in self.zones:
+           self.automatically_manage_zone(zone)
 
     # Zone Listeners           
     def target_temp_change(self, entity, attribute, old, new, kwargs):
@@ -103,6 +105,7 @@ class smarterzones(hass.Hass):
         maxtemp = wanted_zone_temperature + temperature_offsets[0]
         mintemp = wanted_zone_temperature - temperature_offsets[1]
         if coolingmode == ACMODE.OFF:
+            self.switchoff(zone)
             return
         elif coolingmode == ACMODE.COOLING:
             # Check if zone is above the wanted temperature and if so, open the zone to cool      
