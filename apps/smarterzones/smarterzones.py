@@ -60,16 +60,19 @@ class smarterzones(hass.Hass):
     # Zone Listeners           
     def target_temp_change(self, entity, attribute, old, new, kwargs):
         for zone in self.zones:
+            self.queuedlogger(zone["friendly_name"]  + ": Wanted temperature in zone changed from " + str(old) + " to " + str(new))
             self.automatically_manage_zone(zone)
 
     def inroomtempchange(self, entity, attribute, old, new, kwargs):
        for zone in self.zones:
            if zone["local_tempsensor"] == str(entity):
-              self.automatically_manage_zone(zone)
+                self.queuedlogger(zone["friendly_name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
+                self.automatically_manage_zone(zone)
 
     def manual_override_change(self, entity, attribute, old, new, kwargs):
         for zone in self.zones:
             if zone["manual_override"] == str(entity):
+                self.queuedlogger(zone["friendly_name"] + ": manual override switch changed from " + str(old) + " to " + str(new))
                 self.automatically_manage_zone(zone)
 
     # Exterior temperature sensor monitor - for future use       
@@ -117,10 +120,18 @@ class smarterzones(hass.Hass):
             self.queuedlogger("Other")
 
     def switchon(self, zone):
-        self.call_service("switch/turn_on", entity_id = zone["zone_switch"])
+        zone_switch = zone["zone_switch"]
+        state = self.get_state(zone_switch)
+        if state != "on":
+            self.queuedlogger(zone["friendly_name"] + ": zone is opening")
+            self.call_service("switch/turn_on", zone_switch)
       
     def switchoff(self, zone):
-        self.call_service("switch/turn_off", entity_id = zone["zone_switch"])
+        zone_switch = zone["zone_switch"]
+        state = self.get_state(zone_switch)
+        if state != "of":
+            self.queuedlogger(zone["friendly_name"] + ": zone is closing")
+            self.call_service("switch/turn_off", zone_switch)
 
     # Zone Checks
     def override_enabled(self, zone):       
