@@ -46,6 +46,7 @@ smarterzones:
   module: smarterzones
   class: smarterzones
   climatedevice: climate.daikin_ac
+  common_zone_switch: switch.daikin_living
   exteriortempsensor: sensor.bellambi_temp
   force_auto_fan: true
   zones:
