@@ -62,8 +62,9 @@ class smarterzones(hass.Hass):
     # Zone Listeners           
     def target_temp_change(self, entity, attribute, old, new, kwargs):
         for zone in self.zones:
-            self.queuedlogger(zone["name"]  + ": Wanted temperature in zone changed from " + str(old) + " to " + str(new))
-            self.automatically_manage_zone(zone)
+            if (zone["target_temp"] == entity):
+                self.queuedlogger(zone["name"]  + ": Wanted temperature in zone changed from " + str(old) + " to " + str(new))
+                self.automatically_manage_zone(zone)
 
     def inroomtempchange(self, entity, attribute, old, new, kwargs):
        for zone in self.zones:
