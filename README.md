@@ -9,6 +9,7 @@ Here is what every option means:
 | ------------------- | :----------: | ------------ | ----------------------------------------------------------------------- |
 | `climatedevice`     | `string`     | **Required** | An entity_id within the `climate` domain.                               |
 | `exteriortempsensor`| `string`     | **Required** | An entity_id with a temperature value as state                          |
+| `common_zone_switch`| `string`     | Optional     | If your AC requires a common zone, specify the switch here, and the zone will always be on                          |
 | `force_auto_fan`    | `bool`       | False        | Whether the fan should be set to an auto mode.                          |
 | `zone`              | `object`     | **Required** | Zone objects that will be controlled                                    |
 
