@@ -236,6 +236,8 @@ class smarterzones(hass.Hass):
             elif outside_temperature < target_temperature:
                 self.queuedlogger("Estimated mode as heating") 
                 return ACMODE.HEATING
+            else:
+                return ACMODE.OTHER
 
     def queuedlogger(self, message):
         self.log(message)
