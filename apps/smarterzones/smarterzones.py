@@ -229,7 +229,7 @@ class smarterzones(hass.Hass):
             # Since we don't know if we're heating or cooling from the climate devices mode, we need to make our best guess
             # Use target temp compared to external temperature to guess if it's heating or cooling
             outside_temperature = self.get_state(self.exterior_temperature)
-            target_temperature = self.get_state(zone["target_temp"])
+            target_temperature = self.get_state(self.climate_device["temperature"])
             if outside_temperature > target_temperature:   
                 self.queuedlogger("Estimated mode as cooling")      
                 return ACMODE.COOLING
