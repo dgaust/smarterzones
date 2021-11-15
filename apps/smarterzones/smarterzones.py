@@ -11,13 +11,12 @@ class ACMODE(Enum):
     OTHER = 3
     OFF = 4
 
-Common_Zone = False
-
 class smarterzones(hass.Hass): 
-    
+
     def initialize(self):   
         # Get climate device, outside temperature and fan setting
         try:
+            self.Common_Zone_Flag = False
             self.climatedevice = self.args.get('climatedevice')
             self.exterior_temperature = self.args.get('exteriortempsensor')
             self.forceautofan = self.args.get('force_auto_fan', False)    
@@ -43,7 +42,7 @@ class smarterzones(hass.Hass):
                 if zone["zone_switch"] == self.common_zone:
                     self.queuedlogger("Common zone is " + zone["name"])
             self.listen_state(self.common_zone_manager, self.common_zone)
-            Common_Zone = True
+            self.Common_Zone_Flag = True
             self.common_zone_open(self.common_zone)
         except Exception as ex:
             self.queuedlogger("No common zone found")
@@ -71,16 +70,36 @@ class smarterzones(hass.Hass):
 
     def climatedevicechange(self, entity, attribute, old, new, kwargs):
         self.queuedlogger("Climate device change state. Setting up zones appropriately.")
-        if Common_Zone:
-            self.common_zone_manager(entity = self.common_zone, attribute = self.common_zone, old = self.common_zone, new = self.common_zone)
         for zone in self.zones:
             self.automatically_manage_zone(zone)
+        if self.Common_Zone_Flag:
+            self.queuedlogger("Common zone enabled, better set it up")
+            self.common_zone_manager(entity = self.common_zone, attribute = self.common_zone, old = self.common_zone, new = self.common_zone, kwargs = self.Common_Zone_Flag)
 
     # Zone Listeners       
 
     def common_zone_manager(self, entity, attribute, old, new, kwargs):
-        self.queuedlogger("Making sure common zone is open:" + entity)
-        self.common_zone_open(entity)
+        self.queuedlogger("Checking to see if common zone required to be open: " + entity)
+        AZoneOpen = False
+        CommonZoneOpen = False      
+        
+        for zone in self.zones:
+            zonestate = self.get_state(zone["zone_switch"])
+            if zonestate == "on" and self.common_zone != zone["zone_switch"]:
+                self.queuedlogger(zone["name"] + " is already open")
+                AZoneOpen = True
+            elif zonestate == "on" and self.common_zone == zone["zone_switch"]:
+                self.queuedlogger("Common zone is already open")
+                AZoneOpen = True
+                CommonZoneOpen = True
+
+        if AZoneOpen == False and CommonZoneOpen == False:
+            self.queuedlogger("All zones including common are closed so opening the common zone")
+            self.common_zone_open(entity)
+        elif AZoneOpen == False and CommonZoneOpen == True:
+            self.queuedlogger("Zones are closed, but common is open, so it's good")
+        else:
+            self.queuedlogger("At least one zone is open so the Common Zone will be controlled automatically")
 
     def target_temp_change(self, entity, attribute, old, new, kwargs):
         for zone in self.zones:
@@ -151,6 +170,8 @@ class smarterzones(hass.Hass):
         if state != "on":
             self.queuedlogger(zone["name"] + ": zone is opening")
             self.call_service("switch/turn_on", entity_id = zone_switch)
+            if self.Common_Zone_Flag:
+                self.common_zone_manager(entity = self.common_zone, attribute = self.common_zone, old = self.common_zone, new = self.common_zone, kwargs = self.Common_Zone_Flag)
 
     def switchoff(self, zone):
         zone_switch = zone["zone_switch"]
@@ -158,6 +179,8 @@ class smarterzones(hass.Hass):
         if state != "off":
             self.queuedlogger(zone["name"] + ": zone is closing")
             self.call_service("switch/turn_off", entity_id = zone_switch)
+            if self.Common_Zone_Flag:
+                self.common_zone_manager(entity = self.common_zone, attribute = self.common_zone, old = self.common_zone, new = self.common_zone, kwargs = self.Common_Zone_Flag)
 
     def common_zone_open(self, entity):
         state = self.get_state(entity)
