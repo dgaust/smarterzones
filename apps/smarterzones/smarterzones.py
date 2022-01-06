@@ -92,7 +92,6 @@ class smarterzones(hass.Hass):
                 self.queuedlogger("Common zone is already open")
                 AZoneOpen = True
                 CommonZoneOpen = True
-
         if AZoneOpen == False and CommonZoneOpen == False:
             self.queuedlogger("All zones including common are closed so opening the common zone")
             self.common_zone_open(entity)
@@ -166,7 +165,8 @@ class smarterzones(hass.Hass):
                 self.switchoff(zone)
         else:
             # what do we want to do with drying, I think turn all zones on
-            self.queuedlogger("Other")
+            self.switchon(zone)
+            self.queuedlogger("It's either fan or dry mode, so just open the zone")
 
     def switchon(self, zone):
         zone_switch = zone["zone_switch"]
