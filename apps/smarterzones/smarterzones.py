@@ -143,7 +143,11 @@ class smarterzones(hass.Hass):
 
         # Get zones current and wanted temperatures
         wanted_zone_temperature = float(self.get_state(zone["target_temp"]))
-        current_zone_temperature = float(self.get_state(zone["local_tempsensor"]))
+        try:
+            current_zone_temperature = float(self.get_state(zone["local_tempsensor"]))
+        except:
+            current_zone_temperature =  wanted_zone_temperature
+            self.queuedlogger("Error getting current temperature in " + zone["name"] + " zone. Check the temperature sensor.")
         maxtemp = wanted_zone_temperature + temperature_offsets[0]
         mintemp = wanted_zone_temperature - temperature_offsets[1]
         if coolingmode == ACMODE.OFF:
