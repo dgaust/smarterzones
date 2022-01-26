@@ -125,10 +125,11 @@ class smarterzones(hass.Hass):
     def automatically_manage_zone(self, zone):     
         zonename = zone["name"]
         # If manual override exists and is enabled stop processing.
-        self.queuedlogger("Manage managa manage zone:" + zonename)
+        self.queuedlogger("Auto-managing: " + zonename)
 
         climate_device_state = self.get_state(self.climatedevice)
-
+        coolingmode = self.heatingorcooling(climate_device_state, zone)
+        time.sleep(0.2)
         # If the climate control device is off, close zones to prevent any undesired airflow
         if climate_device_state == "off":
            self.switchoff(zone)
@@ -137,9 +138,13 @@ class smarterzones(hass.Hass):
         if self.override_enabled(zone) is True:            
             return
 
+        if coolingmode == ACMODE.HEATING or coolingmode == ACMODE.COOLING:
+           manage = True
+        else:
+           manage = False
+        
         # check if conditions for zone to be open are met and if not close it. 
-        # note: this stops all zones opening when the mode is dry and fan_only
-        if self.IsConditionMet(zone) is False:
+        if self.IsConditionMet(zone) is False and manage:
             self.switchoff(zone)
             return    
 
@@ -147,7 +152,7 @@ class smarterzones(hass.Hass):
        
         # Get current climate device state        
         temperature_offsets = self.get_temperature_offsets(zone, climate_device_state)
-        coolingmode = self.heatingorcooling(climate_device_state, zone)
+        
         # Get zones current and wanted temperatures
         wanted_zone_temperature = float(self.get_state(zone["target_temp"]))
         try:
