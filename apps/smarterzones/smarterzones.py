@@ -285,5 +285,4 @@ class smarterzones(hass.Hass):
                 return ACMODE.OTHER
 
     def queuedlogger(self, message):
-        self.log(message)
-        
+        self.log(message)      
