@@ -49,7 +49,6 @@ class smarterzones(hass.Hass):
             Common_Zone = False
             pass
         
-
         for zone in self.zones:
             self.queuedlogger("Monitoring new zone: " + zone['name'])
             self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
@@ -126,20 +125,34 @@ class smarterzones(hass.Hass):
     def automatically_manage_zone(self, zone):     
         zonename = zone["name"]
         # If manual override exists and is enabled stop processing.
+        self.queuedlogger("Auto-managing: " + zonename)
+
+        climate_device_state = self.get_state(self.climatedevice)
+        coolingmode = self.heatingorcooling(climate_device_state, zone)
+        time.sleep(0.2)
+        # If the climate control device is off, close zones to prevent any undesired airflow
+        if climate_device_state == "off":
+           self.switchoff(zone)
+           return
         
         if self.override_enabled(zone) is True:            
             return
 
-        # check if conditions for zone to be open are met and if not close it.
-        if self.IsConditionMet(zone) is False:
+        if coolingmode == ACMODE.HEATING or coolingmode == ACMODE.COOLING:
+           manage = True
+        else:
+           manage = False
+        
+        # check if conditions for zone to be open are met and if not close it. 
+        if self.IsConditionMet(zone) is False and manage:
             self.switchoff(zone)
             return    
 
-        # Get current climate device state
-        climate_device_state = self.get_state(self.climatedevice)
-        temperature_offsets = self.get_temperature_offsets(zone, climate_device_state)
-        coolingmode = self.heatingorcooling(climate_device_state, zone)
 
+       
+        # Get current climate device state        
+        temperature_offsets = self.get_temperature_offsets(zone, climate_device_state)
+        
         # Get zones current and wanted temperatures
         wanted_zone_temperature = float(self.get_state(zone["target_temp"]))
         try:
@@ -147,6 +160,7 @@ class smarterzones(hass.Hass):
         except:
             current_zone_temperature =  wanted_zone_temperature
             self.queuedlogger("Error getting current temperature in " + zone["name"] + " zone. Check the temperature sensor.")
+        
         maxtemp = wanted_zone_temperature + temperature_offsets[0]
         mintemp = wanted_zone_temperature - temperature_offsets[1]
         if coolingmode == ACMODE.OFF:
@@ -164,7 +178,8 @@ class smarterzones(hass.Hass):
             elif current_zone_temperature >= maxtemp:
                 self.switchoff(zone)
         else:
-            # what do we want to do with drying, I think turn all zones on
+            # what do we want to do with drying, I think turn all zones on. 
+            # this is never hit due to the IsConditionMet check above
             self.switchon(zone)
             self.queuedlogger("It's either fan or dry mode, so just open the zone")
 
@@ -235,15 +250,18 @@ class smarterzones(hass.Hass):
                 boundaries = [float(zone["coolingoffset"]["upperbound"]), float(zone["coolingoffset"]["lowerbound"])]
             except:
                 boundaries = [0.3, 0.3]
+                self.queuedlogger("Error getting cooling offsets for " + zonename + " so defaulting to 0.3 degrees either side of setpoint.")
             return boundaries
         else:
             try:
                 boundaries = [float(zone["heatingoffset"]["upperbound"]), float(zone["heatingoffset"]["lowerbound"])]
             except:
                 boundaries = [0.3, 0.3]
+                self.queuedlogger("Error getting heating offsets for " + zonename + " so defaulting to 0.3 degrees either side of setpoint.")
             return boundaries
 
     def heatingorcooling(self, mode, zone):
+        self.queuedlogger("Mode: " + mode)
         if mode == "off":
             return ACMODE.OFF
         elif mode == "cool":
