@@ -33,6 +33,9 @@ class smarterzones(hass.Hass):
         # Get zones from config
         try: 
             self.zones = self.args.get('zones', []) 
+            for zone in self.zones:
+              self.listen_state(self.target_temp_change, zone)
+              self.listen_state(self.inroomtempchange, zone)
         except Exception as ex:
             self.queuedlogger(ex)
 
@@ -51,7 +54,10 @@ class smarterzones(hass.Hass):
         
         for zone in self.zones:
             self.queuedlogger("Monitoring new zone: " + zone['name'])
-            self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
+            try:
+                self.listen_state(self.manual_override_change, zone['local_tempsensor'])
+            except:
+                self.queuedlogger("Problem getting local temp sensor. Please check status in Home Assistant: " + zone['local_tempsensor'])
             self.listen_state(self.target_temp_change, zone['target_temp'])
             try:
                 self.listen_state(self.manual_override_change, zone['manual_override'])
@@ -129,7 +135,7 @@ class smarterzones(hass.Hass):
 
         climate_device_state = self.get_state(self.climatedevice)
         coolingmode = self.heatingorcooling(climate_device_state, zone)
-        time.sleep(0.2)
+        time.sleep(0.25)
         # If the climate control device is off, close zones to prevent any undesired airflow
         if climate_device_state == "off":
            self.switchoff(zone)
@@ -158,11 +164,13 @@ class smarterzones(hass.Hass):
         try:
             current_zone_temperature = float(self.get_state(zone["local_tempsensor"]))
         except:
-            current_zone_temperature =  wanted_zone_temperature
+            current_zone_temperature =  wanted_zone_temperature + 5
             self.queuedlogger("Error getting current temperature in " + zone["name"] + " zone. Check the temperature sensor.")
+            self.queuedlogger("Setting current zone temperature to " + str(wanted_zone_temperature) + " due to local temp sensor failure")      
         
         maxtemp = wanted_zone_temperature + temperature_offsets[0]
         mintemp = wanted_zone_temperature - temperature_offsets[1]
+        
         if coolingmode == ACMODE.OFF:
             self.switchoff(zone)
             return
