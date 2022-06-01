@@ -33,37 +33,56 @@ class smarterzones(hass.Hass):
         # Get zones from config
         try: 
             self.zones = self.args.get('zones', []) 
+            
+            try:
+               self.common_zone = self.args['common_zone_switch']
+               self.Common_Zone_Flag = True
+            except Exception as ex:
+               self.queuedlogger("No common zone found")
+               Common_Zone = False
+                
             for zone in self.zones:
-              self.listen_state(self.target_temp_change, zone)
-              self.listen_state(self.inroomtempchange, zone)
+              # setup listeners for temp change in the room, and changng the climate device temp change for each zone
+              self.listen_state(self.target_temp_change, zone['target_temp'])
+              self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
+              try:
+                self.listen_state(self.manual_override_change, zone['manual_override'])
+              except:
+                pass
+              self.automatically_manage_zone(zone)
+              
+              # if the zone is also the common zone set up the common zone manager           
+              if Common_Zone and self.common_zone == self.zones:
+                self.listen_state(self.common_zone_manager, self.common_zone)
+                self.common_zone_open(self.common_zone)
         except Exception as ex:
             self.queuedlogger(ex)
 
-        try:
-            self.common_zone = self.args['common_zone_switch']
-            for zone in self.zones:
-                if zone["zone_switch"] == self.common_zone:
-                    self.queuedlogger("Common zone is " + zone["name"])
-            self.listen_state(self.common_zone_manager, self.common_zone)
-            self.Common_Zone_Flag = True
-            self.common_zone_open(self.common_zone)
-        except Exception as ex:
-            self.queuedlogger("No common zone found")
-            Common_Zone = False
-            pass
+#        try:
+#            self.common_zone = self.args['common_zone_switch']
+#            for zone in self.zones:
+#                if zone["zone_switch"] == self.common_zone:
+#                    self.queuedlogger("Common zone is " + zone["name"])
+#            self.listen_state(self.common_zone_manager, self.common_zone)
+#            self.Common_Zone_Flag = True
+#            self.common_zone_open(self.common_zone)
+#        except Exception as ex:
+#            self.queuedlogger("No common zone found")
+#            Common_Zone = False
+#            pass
         
-        for zone in self.zones:
-            self.queuedlogger("Monitoring new zone: " + zone['name'])
-            try:
-                self.listen_state(self.manual_override_change, zone['local_tempsensor'])
-            except:
-                self.queuedlogger("Problem getting local temp sensor. Please check status in Home Assistant: " + zone['local_tempsensor'])
-            self.listen_state(self.target_temp_change, zone['target_temp'])
-            try:
-                self.listen_state(self.manual_override_change, zone['manual_override'])
-            except:
-                pass
-            self.automatically_manage_zone(zone)
+#        for zone in self.zones:
+#            self.queuedlogger("Monitoring new zone: " + zone['name'])
+#            try:
+#                self.listen_state(self.manual_override_change, zone['local_tempsensor'])
+#            except:
+#                self.queuedlogger("Problem getting local temp sensor. Please check status in Home Assistant: " + zone['local_tempsensor'])
+#            self.listen_state(self.target_temp_change, zone['target_temp'])
+#            try:
+#                self.listen_state(self.manual_override_change, zone['manual_override'])
+#            except:
+#                pass
+#            self.automatically_manage_zone(zone)
 
     # Climate Device Listeners
     def climatefanchange(self, entity, attribute, old, new, kwargs):
