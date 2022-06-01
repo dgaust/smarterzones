@@ -33,13 +33,13 @@ class smarterzones(hass.Hass):
         # Get zones from config
         try: 
             self.zones = self.args.get('zones', []) 
-            
+            self.common_zone = ''
             try:
                self.common_zone = self.args['common_zone_switch']
                self.Common_Zone_Flag = True
             except Exception as ex:
                self.queuedlogger("No common zone found")
-               Common_Zone = False
+               self.Common_Zone_Flag = False
                 
             for zone in self.zones:
               # setup listeners for temp change in the room, and changng the climate device temp change for each zone
@@ -52,7 +52,7 @@ class smarterzones(hass.Hass):
               self.automatically_manage_zone(zone)
               
               # if the zone is also the common zone set up the common zone manager           
-              if Common_Zone and self.common_zone == self.zones:
+              if self.Common_Zone_Flag and self.common_zone == self.zones:
                 self.listen_state(self.common_zone_manager, self.common_zone)
                 self.common_zone_open(self.common_zone)
         except Exception as ex:
