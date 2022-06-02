@@ -50,7 +50,6 @@ class smarterzones(hass.Hass):
               # setup listeners for temp change in the room, and changng the climate device temp change for each zone
               self.listen_state(self.target_temp_change, zone['target_temp'])
               self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
-              zone['lasttemp'] = 0
               try:
                 self.listen_state(self.manual_override_change, zone['manual_override'])
               except:
@@ -100,7 +99,6 @@ class smarterzones(hass.Hass):
                   self.queuedlogger(zone["name"] + ": temperature increased by " + str(diff) + " degree")
                 else:
                   self.queuedlogger(zone["name"] + ": temperature decreased by " + str(diff * -1) + " degree")
-                zone.lasttemp = old
                 self.automatically_manage_zone(zone)
 
     def manual_override_change(self, entity, attribute, old, new, kwargs):
