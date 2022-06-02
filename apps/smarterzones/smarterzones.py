@@ -33,37 +33,38 @@ class smarterzones(hass.Hass):
         # Get zones from config
         try: 
             self.zones = self.args.get('zones', []) 
+            try:
+               self.common_zone = self.args['common_zone_switch']
+               self.Common_Zone_Flag = True
+            except Exception as ex:
+               self.queuedlogger("No common zone found")
+               self.Common_Zone_Flag = False
+                
+            # Setup Listeners for the zones
+            # Local Temperature Listener
+            # Local Target Temperature Listener
+            # Manual Override Listener
+            # 
+
             for zone in self.zones:
-              self.listen_state(self.target_temp_change, zone)
-              self.listen_state(self.inroomtempchange, zone)
+              # setup listeners for temp change in the room, and changng the climate device temp change for each zone
+              self.listen_state(self.target_temp_change, zone['target_temp'])
+              self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
+              zone['lasttemp'] = 0
+              try:
+                self.listen_state(self.manual_override_change, zone['manual_override'])
+              except:
+                pass
+
+              # if the zone is also the common zone set up the common zone manager           
+              if self.Common_Zone_Flag and self.common_zone == self.zones:
+                self.listen_state(self.common_zone_manager, self.common_zone)
+                # self.common_zone_open(self.common_zone)
+
+              self.automatically_manage_zone(zone)
         except Exception as ex:
             self.queuedlogger(ex)
 
-        try:
-            self.common_zone = self.args['common_zone_switch']
-            for zone in self.zones:
-                if zone["zone_switch"] == self.common_zone:
-                    self.queuedlogger("Common zone is " + zone["name"])
-            self.listen_state(self.common_zone_manager, self.common_zone)
-            self.Common_Zone_Flag = True
-            self.common_zone_open(self.common_zone)
-        except Exception as ex:
-            self.queuedlogger("No common zone found")
-            Common_Zone = False
-            pass
-        
-        for zone in self.zones:
-            self.queuedlogger("Monitoring new zone: " + zone['name'])
-            try:
-                self.listen_state(self.manual_override_change, zone['local_tempsensor'])
-            except:
-                self.queuedlogger("Problem getting local temp sensor. Please check status in Home Assistant: " + zone['local_tempsensor'])
-            self.listen_state(self.target_temp_change, zone['target_temp'])
-            try:
-                self.listen_state(self.manual_override_change, zone['manual_override'])
-            except:
-                pass
-            self.automatically_manage_zone(zone)
 
     # Climate Device Listeners
     def climatefanchange(self, entity, attribute, old, new, kwargs):
@@ -81,10 +82,38 @@ class smarterzones(hass.Hass):
             self.queuedlogger("Common zone enabled, better set it up")
             self.common_zone_manager(entity = self.common_zone, attribute = self.common_zone, old = self.common_zone, new = self.common_zone, kwargs = self.Common_Zone_Flag)
 
-    # Zone Listeners       
+    # In room sensor or setting changes
+    def target_temp_change(self, entity, attribute, old, new, kwargs):
+        for zone in self.zones:
+            if (zone["target_temp"] == entity):
+                self.queuedlogger(zone["name"]  + ": Wanted temperature in zone changed from " + str(old) + " to " + str(new))
+                self.automatically_manage_zone(zone)
 
+    def inroomtempchange(self, entity, attribute, old, new, kwargs):
+        for zone in self.zones:
+            if zone["local_tempsensor"] == str(entity):
+                self.queuedlogger(zone["name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
+                newint = float(new)
+                oldint = float(old)
+                diff = newint - oldint
+                if diff > 0:
+                  self.queuedlogger(zone["name"] + ": temperature increased by " + str(diff) + " degree")
+                else:
+                  self.queuedlogger(zone["name"] + ": temperature decreased by " + str(diff * -1) + " degree")
+                zone.lasttemp = old
+                self.automatically_manage_zone(zone)
+
+    def manual_override_change(self, entity, attribute, old, new, kwargs):
+        for zone in self.zones:
+            if zone["manual_override"] == str(entity):
+                self.queuedlogger(zone["name"] + ": manual override switch changed from " + str(old) + " to " + str(new))
+                self.automatically_manage_zone(zone)
+
+    # Zone Listeners       
     def common_zone_manager(self, entity, attribute, old, new, kwargs):
         self.queuedlogger("Checking to see if common zone required to be open: " + entity)
+        
+        # what do these do
         AZoneOpen = False
         CommonZoneOpen = False      
         
@@ -105,29 +134,6 @@ class smarterzones(hass.Hass):
         else:
             self.queuedlogger("At least one zone is open so the Common Zone will be controlled automatically")
 
-    def target_temp_change(self, entity, attribute, old, new, kwargs):
-        for zone in self.zones:
-            if (zone["target_temp"] == entity):
-                self.queuedlogger(zone["name"]  + ": Wanted temperature in zone changed from " + str(old) + " to " + str(new))
-                self.automatically_manage_zone(zone)
-
-    def inroomtempchange(self, entity, attribute, old, new, kwargs):
-        for zone in self.zones:
-            if zone["local_tempsensor"] == str(entity):
-                self.queuedlogger(zone["name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
-                self.automatically_manage_zone(zone)
-
-    def manual_override_change(self, entity, attribute, old, new, kwargs):
-        for zone in self.zones:
-            if zone["manual_override"] == str(entity):
-                self.queuedlogger(zone["name"] + ": manual override switch changed from " + str(old) + " to " + str(new))
-                self.automatically_manage_zone(zone)
-
-    # Exterior temperature sensor monitor - for future use       
-    def outside_climate_change(self, entity, attribute, old, new, kwargs):
-        self.queuedlogger("Outside Temperature changed from " + str(old) + " to " + str(new))
-
-    # Zone Management
     def automatically_manage_zone(self, zone):     
         zonename = zone["name"]
         # If manual override exists and is enabled stop processing.
@@ -136,6 +142,7 @@ class smarterzones(hass.Hass):
         climate_device_state = self.get_state(self.climatedevice)
         coolingmode = self.heatingorcooling(climate_device_state, zone)
         time.sleep(0.25)
+        
         # If the climate control device is off, close zones to prevent any undesired airflow
         if climate_device_state == "off":
            self.switchoff(zone)
@@ -149,20 +156,22 @@ class smarterzones(hass.Hass):
         else:
            manage = False
         
+        self.queuedlogger(zonename + ": auto control conditon is " + str(self.IsConditionMet(zone)))
+
         # check if conditions for zone to be open are met and if not close it. 
         if self.IsConditionMet(zone) is False and manage:
             self.switchoff(zone)
             return    
 
-
-       
         # Get current climate device state        
         temperature_offsets = self.get_temperature_offsets(zone, climate_device_state)
         
         # Get zones current and wanted temperatures
         wanted_zone_temperature = float(self.get_state(zone["target_temp"]))
+
         try:
             current_zone_temperature = float(self.get_state(zone["local_tempsensor"]))
+            self.queuedlogger(zonename + ": current zone temperature is " + str(current_zone_temperature) + " and wanted temperature is " + str(wanted_zone_temperature)) 
         except:
             current_zone_temperature =  wanted_zone_temperature + 5
             self.queuedlogger("Error getting current temperature in " + zone["name"] + " zone. Check the temperature sensor.")
@@ -171,6 +180,8 @@ class smarterzones(hass.Hass):
         maxtemp = wanted_zone_temperature + temperature_offsets[0]
         mintemp = wanted_zone_temperature - temperature_offsets[1]
         
+        self.queuedlogger(zonename + ": Desired temperature range is: " + str(mintemp) + " to " + str(maxtemp))
+
         if coolingmode == ACMODE.OFF:
             self.switchoff(zone)
             return
@@ -189,7 +200,12 @@ class smarterzones(hass.Hass):
             # what do we want to do with drying, I think turn all zones on. 
             # this is never hit due to the IsConditionMet check above
             self.switchon(zone)
-            self.queuedlogger("It's either fan or dry mode, so just open the zone")
+            self.queuedlogger(zonename + ": It's either fan or dry mode, so just open the zone")
+
+
+    # Exterior temperature sensor monitor - for future use       
+    def outside_climate_change(self, entity, attribute, old, new, kwargs):
+        self.queuedlogger("Outside Temperature changed from " + str(old) + " to " + str(new))   
 
     def switchon(self, zone):
         zone_switch = zone["zone_switch"]
