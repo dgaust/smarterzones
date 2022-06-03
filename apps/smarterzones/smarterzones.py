@@ -94,7 +94,7 @@ class smarterzones(hass.Hass):
                 self.queuedlogger(zone["name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
                 newint = float(new)
                 oldint = float(old)
-                diff = newint - oldint
+                diff = round(newint - oldint, 2)
                 if diff > 0:
                   self.queuedlogger(zone["name"] + ": temperature increased by " + str(diff) + " degree")
                 else:
