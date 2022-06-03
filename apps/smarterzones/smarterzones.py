@@ -94,11 +94,11 @@ class smarterzones(hass.Hass):
                 self.queuedlogger(zone["name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
                 newint = float(new)
                 oldint = float(old)
-                diff = round(newint - oldint, 2)
+                diff = round(newint - oldint,2)
                 if diff > 0:
-                  self.queuedlogger(zone["name"] + ": temperature increased by " + str(diff) + " degree")
+                  self.queuedlogger(zone["name"] + ": temperature increased by " + str(diff) + " degrees")
                 else:
-                  self.queuedlogger(zone["name"] + ": temperature decreased by " + str(diff * -1) + " degree")
+                  self.queuedlogger(zone["name"] + ": temperature decreased by " + str(diff * -1) + " degrees")
                 self.automatically_manage_zone(zone)
 
     def manual_override_change(self, entity, attribute, old, new, kwargs):
