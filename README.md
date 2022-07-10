@@ -30,8 +30,8 @@ Here is what every option means:
 ### Temperature Offset Object                                                                                    
 | Name           |   Type    | Default          | Description                                                             |
 | -------------- | :-------: | ---------------- | ----------------------------------------------------------------------- |
-| `upperbound`   | `float`   | **Required**     | Value above setpoint that local_tempsensor can reach. Required if coolingoffset or heatingoffset is specified.                |
-| `lowerbound`   | `float`   | **Required**     | Value below setpoint that local_tempsensor can reach. Required if coolingoffset or heatingoffset is specified.                |                 
+| `upperbound`   | `float`   | **Required**     | Value above setpoint that local_tempsensor can reach. Required if coolingoffset or heatingoffset is specified. This will be the amount over the preferred temperature (ie. 20 degrees + upperbound)                |
+| `lowerbound`   | `float`   | **Required**     | Value below setpoint that local_tempsensor can reach. Required if coolingoffset or heatingoffset is specified. This will be the amount below the preferred temperature (ie. 20 degrees - upperbound)                      |                 
  
 ### Condition Object                                                                                               
 | Name           |   Type    | Default          | Description                                                             |
