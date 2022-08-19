@@ -89,6 +89,7 @@ class smarterzones(hass.Hass):
                 self.automatically_manage_zone(zone)
 
     def inroomtempchange(self, entity, attribute, old, new, kwargs):
+        self.queuedlogger("Got an inzone temp change from: " + entity)
         for zone in self.zones:
             if zone["local_tempsensor"] == str(entity):
                 self.queuedlogger(zone["name"] + ": Current temperature in zone changed from " + str(old) + " to " + str(new))
@@ -210,6 +211,7 @@ class smarterzones(hass.Hass):
         state = self.get_state(zone_switch)
         if state != "on":
             self.queuedlogger(zone["name"] + ": zone is opening")
+            time.sleep(0.2)
             self.call_service("switch/turn_on", entity_id = zone_switch)
             if self.Common_Zone_Flag:
                 self.common_zone_manager(entity = self.common_zone, attribute = self.common_zone, old = self.common_zone, new = self.common_zone, kwargs = self.Common_Zone_Flag)
@@ -219,6 +221,7 @@ class smarterzones(hass.Hass):
         state = self.get_state(zone_switch)
         if state != "off":
             self.queuedlogger(zone["name"] + ": zone is closing")
+            time.sleep(0.2)
             self.call_service("switch/turn_off", entity_id = zone_switch)
             if self.Common_Zone_Flag:
                 self.common_zone_manager(entity = self.common_zone, attribute = self.common_zone, old = self.common_zone, new = self.common_zone, kwargs = self.Common_Zone_Flag)
@@ -227,12 +230,14 @@ class smarterzones(hass.Hass):
         state = self.get_state(entity)
         if state != "on":
             self.queuedlogger("Ensuring common zone is open")
+            time.sleep(0.2)
             self.call_service("switch/turn_on", entity_id = entity)
 
     def common_zone_closed(self, entity):
         state = self.get_state(entity)
         if state != "off":
             self.queuedlogger("Climate is off, so turning common zone off")
+            time.sleep(0.2)
             self.call_service("switch/turn_off", entity_id = entity)
 
     # Zone Checks
