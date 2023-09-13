@@ -50,11 +50,11 @@ smarterzones:
   exteriortempsensor: sensor.bellambi_temp
   force_auto_fan: true
   zones:
-    - name: "Alex Smart Zone"
-      zone_switch: switch.daikin_ac_alex
-      local_tempsensor: sensor.alex_temp_sensor_sonoff
+    - name: "A Smart Zone"
+      zone_switch: switch.daikin_ac_a
+      local_tempsensor: sensor.a_temp_sensor_sonoff
       manual_override: input_boolean.alexsmartzone
-      target_temp: input_number.alex_temp_setting
+      target_temp: input_number.a_temp_setting
       coolingoffset:
         upperbound: 0.3
         lowerbound: 0.3
@@ -62,13 +62,13 @@ smarterzones:
         upperbound: 0.3
         lowerbound: 0.3
       conditions:
-        - entity: binary_sensor.alex_window_sensor_2
+        - entity: binary_sensor.a_window_sensor_2
           targetstate: "off"
-    - name: "Bridgets Smart Zone"
-      zone_switch: switch.daikin_ac_bridget
-      local_tempsensor: sensor.bridgets_temperature_sensor
+    - name: "B Smart Zone"
+      zone_switch: switch.daikin_ac_b
+      local_tempsensor: sensor.b_temperature_sensor
       manual_override: input_boolean.bridgetsmartzone
-      target_temp: input_number.bridget_temp_setting
+      target_temp: input_number.b_temp_setting
       coolingoffset:
         upperbound: 0.3
         lowerbound: 0.3
@@ -76,7 +76,7 @@ smarterzones:
         upperbound: 0.3
         lowerbound: 0.3
       conditions:
-        - entity: binary_sensor.bridget_window_sensor_2
+        - entity: binary_sensor.b_window_sensor_2
           targetstate: "off"
     - name: "Lounge Smart Zone"
       zone_switch: switch.daikin_ac_living
