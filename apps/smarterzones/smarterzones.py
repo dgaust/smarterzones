@@ -12,6 +12,8 @@ class ACMODE(Enum):
     OFF = 4
 
 class smarterzones(hass.Hass): 
+    COOLING_OFFSET_DEFAULT = [0.3, 0.3]
+    HEATING_OFFSET_DEFAULT = [0.3, 0.3]
 
     def initialize(self):   
         # Get climate device, outside temperature and fan setting
@@ -20,17 +22,13 @@ class smarterzones(hass.Hass):
             self.climatedevice = self.args.get('climatedevice')
             self.exterior_temperature = self.args.get('exteriortempsensor')
             self.forceautofan = self.args.get('force_auto_fan', False)    
-            # Hook up a listener for the climate device
             self.listen_state(self.climatedevicechange, self.climatedevice)    
-            # Hook up a listener for an exterior temperature change (maybe)
             self.listen_state(self.outside_climate_change, self.exterior_temperature)
-            # Hook up a listener to force the fan to auto mode
             if self.forceautofan:
                 self.listen_state(self.climatefanchange, self.climatedevice, attribute="fan_mode")
         except Exception as ex:
             self.queuedlogger(ex)
 
-        # Get zones from config
         try: 
             self.zones = self.args.get('zones', []) 
             try:
@@ -39,36 +37,27 @@ class smarterzones(hass.Hass):
             except Exception as ex:
                 self.queuedlogger("No common zone found")
                 self.Common_Zone_Flag = False
-                
-            # Setup Listeners for the zones
-            # Local Temperature Listener
-            # Local Target Temperature Listener
-            # Manual Override Listener
-            # 
 
             for zone in self.zones:
-                # setup listeners for temp change in the room, and changng the climate device temp change for each zone
                 self.listen_state(self.target_temp_change, zone['target_temp'])
                 self.listen_state(self.inroomtempchange, zone['local_tempsensor'])
-                
-                # Setup listeners for any condition so they are recognised immediately and zones controlled
+
                 try:
                     for item in zone["conditions"]:
                         entity = item["entity"]
                         self.listen_state(self.conditionchanged, entity)
-                except:
-                    self.queuedlogger("Trouble setting condition listener")
+                except Exception as ex:
+                    self.queuedlogger("Trouble setting condition listener: " + str(ex))
                     pass
 
                 try:
                     self.listen_state(self.manual_override_change, zone['manual_override'])
-                except:
+                except Exception as ex:
                     pass
 
-                # if the zone is also the common zone set up the common zone manager           
-                if self.Common_Zone_Flag and self.common_zone == self.zones:
+                if self.Common_Zone_Flag and self.common_zone == zone["zone_switch"]:
                     self.listen_state(self.common_zone_manager, self.common_zone)
-                    # self.common_zone_open(self.common_zone)
+
                 self.automatically_manage_zone(zone)
 
         except Exception as ex:
@@ -81,11 +70,10 @@ class smarterzones(hass.Hass):
 
     # Climate Device Listeners
     def climatefanchange(self, entity, attribute, old, new, kwargs):
-        ison = self.get_state(entity)
-        if ison != "off" and new.lower().find("auto") == -1: 
-            availablemodes = self.get_state(entity, attribute="fan_modes")
-            if str(availablemodes).lower().find("auto") != -1:
-                self.call_service("climate/set_fan_mode", entity_id = self.climatedevice, fan_mode = new + "/Auto")
+        is_on = self.get_state(entity)
+        if is_on != "off" and "auto" not in self.get_state(entity, attribute="fan_modes").lower():
+            self.call_service("climate/set_fan_mode", entity_id=self.climatedevice, fan_mode=f"{new}/Auto")
+
 
     def climatedevicechange(self, entity, attribute, old, new, kwargs):
         self.queuedlogger("Climate device change state. Setting up zones appropriately.")
@@ -286,19 +274,19 @@ class smarterzones(hass.Hass):
     def get_temperature_offsets(self, zone, mode):
         zonename = zone["name"]
         mode = self.heatingorcooling(mode, zone)
-        if mode == ACMODE.COOLING or ACMODE.OTHER:
+        if mode == ACMODE.COOLING or mode == ACMODE.OTHER:
             try:
                 boundaries = [float(zone["coolingoffset"]["upperbound"]), float(zone["coolingoffset"]["lowerbound"])]
-            except:
-                boundaries = [0.3, 0.3]
-                self.queuedlogger("Error getting cooling offsets for " + zonename + " so defaulting to 0.3 degrees either side of setpoint.")
+            except Exception as e:
+                boundaries = self.COOLING_OFFSET_DEFAULT
+                self.queuedlogger(f"Error getting cooling offsets for {zonename}: {e}. Defaulting to {self.COOLING_OFFSET_DEFAULT} degrees either side of setpoint.")
             return boundaries
         else:
             try:
                 boundaries = [float(zone["heatingoffset"]["upperbound"]), float(zone["heatingoffset"]["lowerbound"])]
-            except:
-                boundaries = [0.3, 0.3]
-                self.queuedlogger("Error getting heating offsets for " + zonename + " so defaulting to 0.3 degrees either side of setpoint.")
+            except Exception as e:
+                boundaries = self.HEATING_OFFSET_DEFAULT
+                self.queuedlogger(f"Error getting heating offsets for {zonename}: {e}. Defaulting to {self.HEATING_OFFSET_DEFAULT} degrees either side of setpoint.")
             return boundaries
 
     def heatingorcooling(self, mode, zone):
@@ -312,10 +300,8 @@ class smarterzones(hass.Hass):
         elif mode == "fan_only" or mode == "dry": 
             return ACMODE.OTHER
         else:
-            # Since we don't know if we're heating or cooling from the climate devices mode, we need to make our best guess
-            # Use target temp compared to external temperature to guess if it's heating or cooling
             outside_temperature = float(self.get_state(self.exterior_temperature))
-            target_temperature = float(self.get_state(self.climatedevice,"temperature"))
+            target_temperature = float(self.get_state(self.climatedevice, "temperature"))
             if outside_temperature > target_temperature:   
                 self.queuedlogger("Estimated mode as cooling")      
                 return ACMODE.COOLING
@@ -326,4 +312,4 @@ class smarterzones(hass.Hass):
                 return ACMODE.OTHER
 
     def queuedlogger(self, message):
-        self.log(message)      
+        self.log(message) 
