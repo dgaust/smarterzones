@@ -76,12 +76,17 @@ class smarterzones(hass.Hass):
 
     def trigger_temp_sensor_changed(self, entity, attribute, old, new, kwargs):
         currenttemp = float(new)
-        if currenttemp >= self.TriggerTemperatureUpper or currenttemp <= self.TriggerTemperatureLower:
-            devicestate = self.get_state(self.climatedevice)
-            if (devicestate == 'off'):
-                self.queuedlogger("Trigger temperature exceeded, turning on airconditioner auto mode")
-                self.climate_entity = self.get_entity(self.climatedevice)
-                self.climate_entity.call_service("set_hvac_mode", hvac_mode = "heat_cool" )
+        modestring = "heat_cool"
+        if currenttemp >= self.TriggerTemperatureUpper:
+            modestring = "cool"
+        elif currenttemp <= self.TriggerTemperatureLower:
+            modestring = "heat"
+
+        devicestate = self.get_state(self.climatedevice)
+        if (devicestate == 'off'):
+            self.queuedlogger("Trigger temperature exceeded, turning on airconditioner auto mode")
+            self.climate_entity = self.get_entity(self.climatedevice)
+            self.climate_entity.call_service("set_hvac_mode", hvac_mode = modestring )
 
 
 
