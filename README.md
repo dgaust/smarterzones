@@ -5,13 +5,16 @@ Here is what every option means:
 
 ### Minimum Configuration
 
-| Name                |   Type       | Default      | Description                                                             |
-| ------------------- | :----------: | ------------ | ----------------------------------------------------------------------- |
-| `climatedevice`     | `string`     | **Required** | An entity_id within the `climate` domain.                               |
-| `exteriortempsensor`| `string`     | **Required** | An entity_id with a temperature value as state                          |
-| `common_zone_switch`| `string`     | Optional     | If your AC requires a common zone, specify the switch entity here, and the zone will always be on. This is an alternate approach to leaving the zone out of the list                         |
-| `force_auto_fan`    | `bool`       | False        | Whether the fan should be set to an auto mode.                          |
-| `zone`              | `object`     | **Required** | Zone objects that will be controlled                                    |
+| Name                  |   Type       | Default      | Description                                                             |
+| --------------------- | :----------: | ------------ | ----------------------------------------------------------------------- |
+| `climatedevice`       | `string`     | **Required** | An entity_id within the `climate` domain.                               |
+| `exteriortempsensor`  | `string`     | **Required** | An entity_id with a temperature value as state                          |
+| `common_zone_switch`  | `string`     | Optional     | If your AC requires a common zone, specify the switch entity here, and the zone will always be on. This is an alternate approach to leaving the zone out of the list                         |
+| `force_auto_fan`      | `bool`       | False        | Whether the fan should be set to an auto mode.                          |
+| `trigger_temp_sensor` | `string`     | False        | An entity_id with a temperature value as state                           |
+| `trigger_temp_upper`  | `float`      | False        | Temperature which if trigger sensor goes above will turn the air-con on                          |
+| `trigger_temp_lower`  | `float`      | False        | Temperature which if trigger sensor goes below will turn the air-con on                          |
+| `zone`                | `object`     | **Required** | Zone objects that will be controlled                                    |
 
 ### Zone Object
 
@@ -49,6 +52,9 @@ smarterzones:
   common_zone_switch: switch.daikin_living
   exteriortempsensor: sensor.bellambi_temp
   force_auto_fan: true
+  trigger_temp_sensor: sensor.living_room_temperature
+  trigger_temp_upper: 27
+  trigger_temp_lower: 18
   zones:
     - name: "A Smart Zone"
       zone_switch: switch.daikin_ac_a
