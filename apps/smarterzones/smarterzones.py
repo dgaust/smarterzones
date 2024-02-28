@@ -14,7 +14,8 @@ class ACMODE(Enum):
 class smarterzones(hass.Hass): 
     COOLING_OFFSET_DEFAULT = [0.3, 0.3]
     HEATING_OFFSET_DEFAULT = [0.3, 0.3]
-    TriggerTemperature = 0
+    TriggerTemperatureUpper = 0
+    TriggerTemperatureLower = 0
 
     def initialize(self):   
         # Get climate device, outside temperature and fan setting
@@ -41,7 +42,8 @@ class smarterzones(hass.Hass):
 
             try:
                 self.trigger_temp_sensor = self.args['trigger_temp_sensor']
-                self.TriggerTemperature = self.args['trigger_temp']
+                self.TriggerTemperatureUpper = self.args['trigger_temp_upper']
+                self.TriggerTemperatureLower = self.args['trigger_temp_lower']
                 self.listen_state(self.trigger_temp_sensor_changed,  self.trigger_temp_sensor)
                 self.queuedlogger("Trigger sensor detected, will automatically turn on airconditioner when temp exceeds: " + str(self.trigger_temp))
             except Exception as ex:
@@ -72,16 +74,14 @@ class smarterzones(hass.Hass):
         except Exception as ex:
             self.queuedlogger(ex)
 
-    def entity_creation():
-
-
     def trigger_temp_sensor_changed(self, entity, attribute, old, new, kwargs):
-        if (float(new) >= self.TriggerTemperature):
+        currenttemp = float(new)
+        if currenttemp >= self.TriggerTemperatureUpper or currenttemp <= self.TriggerTemperatureLower:
             devicestate = self.get_state(self.climatedevice)
             if (devicestate == 'off'):
-                self.queuedlogger("Trigger temperature exceeded, turning on airconditioner to cool")
+                self.queuedlogger("Trigger temperature exceeded, turning on airconditioner auto mode")
                 self.climate_entity = self.get_entity(self.climatedevice)
-                self.climate_entity.call_service("set_hvac_mode", hvac_mode = "cool" )
+                self.climate_entity.call_service("set_hvac_mode", hvac_mode = "heat_cool" )
 
 
 
