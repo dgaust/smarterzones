@@ -14,6 +14,7 @@ class ACMODE(Enum):
 class smarterzones(hass.Hass): 
     COOLING_OFFSET_DEFAULT = [0.3, 0.3]
     HEATING_OFFSET_DEFAULT = [0.3, 0.3]
+    TriggerTemperature = 0
 
     def initialize(self):   
         # Get climate device, outside temperature and fan setting
@@ -37,6 +38,14 @@ class smarterzones(hass.Hass):
             except Exception as ex:
                 self.queuedlogger("No common zone found")
                 self.Common_Zone_Flag = False
+
+            try:
+                self.trigger_temp_sensor = self.args['trigger_temp_sensor']
+                self.TriggerTemperature = self.args['trigger_temp']
+                self.listen_state(self.trigger_temp_sensor_changed,  self.trigger_temp_sensor)
+                self.queuedlogger("Trigger sensor detected, will automatically turn on airconditioner when temp exceeds: " + str(self.trigger_temp))
+            except Exception as ex:
+                self.queuedlogger("No trigger threshold entity available")
 
             for zone in self.zones:
                 self.listen_state(self.target_temp_change, zone['target_temp'])
@@ -62,6 +71,19 @@ class smarterzones(hass.Hass):
 
         except Exception as ex:
             self.queuedlogger(ex)
+
+    def entity_creation():
+
+
+    def trigger_temp_sensor_changed(self, entity, attribute, old, new, kwargs):
+        if (float(new) >= self.TriggerTemperature):
+            devicestate = self.get_state(self.climatedevice)
+            if (devicestate == 'off'):
+                self.queuedlogger("Trigger temperature exceeded, turning on airconditioner to cool")
+                self.climate_entity = self.get_entity(self.climatedevice)
+                self.climate_entity.call_service("set_hvac_mode", hvac_mode = "cool" )
+
+
 
     def conditionchanged(self, entity, attribute, old, new, kwargs):
         self.queuedlogger("A condition in one of the zones changed")
