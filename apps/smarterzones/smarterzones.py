@@ -149,17 +149,32 @@ class SmarterZones(hass.Hass):
     def common_zone_manager(self, entity, attribute, old, new, kwargs):
         """Manage the common zone based on the state of other zones."""
         self.log_info(f"Checking to see if common zone required to be open: {entity}")
-
+    
+        # Check if any zone other than the common zone is on
         zone_open = any(self.get_state(zone["zone_switch"]) == "on" for zone in self.zones if self.common_zone != zone["zone_switch"])
         common_zone_open = self.get_state(self.common_zone) == "on"
-
+    
+        # If no other zones are open and the common zone is not open, open the common zone
         if not zone_open and not common_zone_open:
             self.log_info("All zones including common are closed, so opening the common zone")
             self.common_zone_open(entity)
+        # If no other zones are open and the common zone is already open, log that it's good
         elif not zone_open and common_zone_open:
             self.log_info("Zones are closed, but common is open, so it's good")
+        # If at least one other zone is open and the common zone is open, close the common zone
+        elif zone_open and common_zone_open:
+            self.log_info("At least one zone is open, so closing the Common Zone")
+            self.common_zone_close(entity)
+        # If at least one other zone is open, log that the common zone will be controlled automatically
         else:
             self.log_info("At least one zone is open, so the Common Zone will be controlled automatically")
+
+    def common_zone_close(self, entity):
+        """Close the common zone."""
+        self.log_info("Closing Common Zone")
+        if self.get_state(entity) == "on":
+            self.turn_off(entity)
+
 
     def automatically_manage_zone(self, zone):
         """Automatically manage a zone based on its conditions and temperatures."""
