@@ -2,7 +2,6 @@ import queue
 from typing import List
 import appdaemon.plugins.hass.hassapi as hass
 import time
-import json
 from enum import Enum
 
 class ACMODE(Enum):
@@ -45,7 +44,7 @@ class smarterzones(hass.Hass):
                 self.TriggerTemperatureUpper = self.args['trigger_temp_upper']
                 self.TriggerTemperatureLower = self.args['trigger_temp_lower']
                 self.listen_state(self.trigger_temp_sensor_changed,  self.trigger_temp_sensor)
-                self.queuedlogger("Trigger sensor detected, will automatically turn on airconditioner when temp exceeds: " + str(self.trigger_temp))
+                self.queuedlogger("Trigger sensor detected, will automatically turn on airconditioner when temp exceeds: " + str(self.TriggerTemperatureUpper))
             except Exception as ex:
                 self.queuedlogger("No trigger threshold entity available")
 
