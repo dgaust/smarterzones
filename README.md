@@ -13,8 +13,8 @@ Here is what every option means:
 | `force_auto_fan`      | `bool`       | False        | Whether the fan should be set to an auto mode.                          |
 | `auto_control_on_sensor_temperature` | `bool`     | False        | Whether the climate device could be turned on if a specific temperature is passed by the tigger sensor                           |
 | `trigger_temp_sensor` | `string`     | False        | An entity_id with a temperature value as state                           |
-| `trigger_temp_upper`  | `float`      | False        | Temperature which if trigger sensor goes *above* will turn the air-con on                          |
-| `trigger_temp_lower`  | `float`      | False        | Temperature which if trigger sensor goes *below* will turn the air-con on                          |
+| `trigger_temp_upper`  | `float`      | 17       | Temperature which if trigger sensor goes *above* will turn the air-con on                          |
+| `trigger_temp_lower`  | `float`      | 31        | Temperature which if trigger sensor goes *below* will turn the air-con on                          |
 | `zone`                | `object`     | **Required** | Zone objects that will be controlled                                    |
 
 ### Zone Object
