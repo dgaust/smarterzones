@@ -10,7 +10,7 @@ class ACMODE(Enum):
     OTHER = 3
     OFF = 4
 
-class SmarterZones(hass.Hass):
+class smarterzones(hass.Hass):
     """
     SmarterZones is an AppDaemon app to manage climate zones using Home Assistant.
     """
