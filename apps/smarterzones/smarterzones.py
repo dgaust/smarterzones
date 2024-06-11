@@ -17,11 +17,12 @@ class SmarterZones(hass.Hass):
 
     COOLING_OFFSET_DEFAULT = [0.3, 0.3]
     HEATING_OFFSET_DEFAULT = [0.3, 0.3]
-    TriggerTemperatureUpper = 0
-    TriggerTemperatureLower = 0
+    TriggerTemperatureUpper = 31
+    TriggerTemperatureLower = 17
 
     def initialize(self):
         """Initialize the SmarterZones app."""
+        """Test Copy"""
         try:
             self.log_info("Setting up")
             self.Common_Zone_Flag = False
@@ -29,6 +30,8 @@ class SmarterZones(hass.Hass):
             self.exterior_temperature = self.args.get('exteriortempsensor')
             self.forceautofan = self.args.get('force_auto_fan', False)
             self.auto_on_from_outside_temp = self.args.get('auto_control_on_outside_temperature', False)
+            self.TriggerTemperatureUpper = self.args.get('trigger_temp_upper', 31)
+            self.TriggerTemperatureLower = self.args.get('trigger_temp_lower', 17)
             self.listen_state(self.climate_device_change, self.climatedevice)
             self.listen_state(self.outside_climate_change, self.exterior_temperature)
             if self.forceautofan:
@@ -275,19 +278,17 @@ class SmarterZones(hass.Hass):
 
     def outside_climate_change(self, entity, attribute, old, new, kwargs):
         """Handle changes in the exterior temperature sensor."""
+        current_outdoor_temp = float(new)
+        old_outdoor_temp = float(old)
+        self.log_info(f"Exterior temperature changed from {old_outdoor_temp} to {current_outdoor_temp}")
         if self.auto_on_from_outside_temp:
             current_outdoor_temp = float(new)
-            self.log_info(f"Exterior temperature changed to {current_outdoor_temp}")
-    
-            # Example logic to adjust climate control based on exterior temperature
-            if current_outdoor_temp > TriggerTemperatureUpper:
+            if current_outdoor_temp > self.TriggerTemperatureUpper:
                 self.log_info("Exterior temperature is very high, consider turning on cooling")
                 self.climate_entity.call_service("set_hvac_mode", hvac_mode="cool")
-            # Insert logic to adjust interior climate based on high exterior temperature
-            elif current_outdoor_temp < TriggerTemperatureLower:
+            elif current_outdoor_temp < self.TriggerTemperatureLower:
                 self.log_info("Exterior temperature is very low, consider turning on heating")
                 self.climate_entity.call_service("set_hvac_mode", hvac_mode="heat")
-            # Insert logic to adjust interior climate based on low exterior temperature
             else:
                 self.log_info("Exterior temperature is moderate, no immediate action required")
         else:
