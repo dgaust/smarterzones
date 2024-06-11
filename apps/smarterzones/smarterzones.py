@@ -23,11 +23,12 @@ class SmarterZones(hass.Hass):
     def initialize(self):
         """Initialize the SmarterZones app."""
         try:
+            self.log_info("Setting up")
             self.Common_Zone_Flag = False
             self.climatedevice = self.args.get('climatedevice')
             self.exterior_temperature = self.args.get('exteriortempsensor')
             self.forceautofan = self.args.get('force_auto_fan', False)
-
+            self.auto_on_from_outside_temp = self.args.get('auto_control_on_outside_temperature', False)
             self.listen_state(self.climate_device_change, self.climatedevice)
             self.listen_state(self.outside_climate_change, self.exterior_temperature)
             if self.forceautofan:
@@ -41,10 +42,7 @@ class SmarterZones(hass.Hass):
         """Setup the zones and their listeners."""
         try:
             self.zones = self.args.get('zones', [])
-
             self.setup_common_zone()
-            self.setup_trigger_sensor()
-
             for zone in self.zones:
                 self.setup_zone_listeners(zone)
                 self.automatically_manage_zone(zone)
@@ -60,14 +58,6 @@ class SmarterZones(hass.Hass):
             self.log_info("No common zone found")
             self.Common_Zone_Flag = False
 
-    def setup_trigger_sensor(self):
-        """Setup the trigger temperature sensor if available."""
-        try:
-            self.trigger_temp_sensor = self.args['trigger_temp_sensor']
-            self.TriggerTemperatureUpper = self.args['trigger_temp_upper']
-            self.TriggerTemperatureLower = self.args['trigger_temp_lower']
-            self.listen_state(self.trigger_temp_sensor_changed, self.trigger_temp_sensor)
-            self.log_info(f"Trigger sensor detected, will automatically turn on airconditioner when temp exceeds: {self.TriggerTemperatureUpper}")
         except KeyError:
             self.log_info("No trigger threshold entity available")
 
@@ -85,22 +75,6 @@ class SmarterZones(hass.Hass):
 
         if self.Common_Zone_Flag and self.common_zone == zone["zone_switch"]:
             self.listen_state(self.common_zone_manager, self.common_zone)
-
-    def trigger_temp_sensor_changed(self, entity, attribute, old, new, kwargs):
-        """Handle changes in the trigger temperature sensor."""
-        current_temp = float(new)
-        self.log_info(f"Upper trigger temp is {self.TriggerTemperatureUpper}")
-        self.log_info(f"Lower trigger temp is {self.TriggerTemperatureLower}")
-        self.log_info("Trigger temperature exceeded, turning on airconditioner auto mode")
-
-        device_state = self.get_state(self.climatedevice)
-        self.climate_entity = self.get_entity(self.climatedevice)
-
-        if device_state == 'off' and self.climate_entity:
-            if current_temp >= self.TriggerTemperatureUpper:
-                self.climate_entity.call_service("set_hvac_mode", hvac_mode="cool")
-            elif current_temp <= self.TriggerTemperatureLower:
-                self.climate_entity.call_service("set_hvac_mode", hvac_mode="heat")
 
     def condition_changed(self, entity, attribute, old, new, kwargs):
         """Handle changes in zone conditions."""
@@ -243,11 +217,11 @@ class SmarterZones(hass.Hass):
         
     def log_info(self, message):
         """Log an info message."""
-        self.log(f"Smarter Zones: {message}")
+        self.log(f"{message}", level ="INFO")
 
     def log_error(self, error):
         """Log an error message."""
-        self.error(f"Smarter Zones Error: {error}")
+        self.log(f"{error}", level = "ERROR")
 
     def override_enabled(self, zone):
         """Check if manual override is enabled for a zone."""
@@ -276,7 +250,7 @@ class SmarterZones(hass.Hass):
         for condition in zone.get("conditions", []):
             entity = condition["entity"]
             entity_state = str(self.get_state(entity)).lower()
-            condition_state = str(condition["state"]).lower()
+            condition_state = str(condition["targetstate"]).lower()
             if entity_state != condition_state:
                 self.log_info(f"Condition not met: {entity}. Current state: {entity_state}, required state: {condition_state}")
                 return False
@@ -301,15 +275,20 @@ class SmarterZones(hass.Hass):
 
     def outside_climate_change(self, entity, attribute, old, new, kwargs):
         """Handle changes in the exterior temperature sensor."""
-        current_outdoor_temp = float(new)
-        self.log_info(f"Exterior temperature changed to {current_outdoor_temp}")
+        if self.auto_on_from_outside_temp:
+            current_outdoor_temp = float(new)
+            self.log_info(f"Exterior temperature changed to {current_outdoor_temp}")
     
-        # Example logic to adjust climate control based on exterior temperature
-        if current_outdoor_temp > TriggerTemperatureUpper:
-            self.log_info("Exterior temperature is very high, consider turning on cooling")
-        # Insert logic to adjust interior climate based on high exterior temperature
-        elif current_outdoor_temp < TriggerTemperatureLower:
-            self.log_info("Exterior temperature is very low, consider turning on heating")
-        # Insert logic to adjust interior climate based on low exterior temperature
+            # Example logic to adjust climate control based on exterior temperature
+            if current_outdoor_temp > TriggerTemperatureUpper:
+                self.log_info("Exterior temperature is very high, consider turning on cooling")
+                self.climate_entity.call_service("set_hvac_mode", hvac_mode="cool")
+            # Insert logic to adjust interior climate based on high exterior temperature
+            elif current_outdoor_temp < TriggerTemperatureLower:
+                self.log_info("Exterior temperature is very low, consider turning on heating")
+                self.climate_entity.call_service("set_hvac_mode", hvac_mode="heat")
+            # Insert logic to adjust interior climate based on low exterior temperature
+            else:
+                self.log_info("Exterior temperature is moderate, no immediate action required")
         else:
-            self.log_info("Exterior temperature is moderate, no immediate action required")
+            self.log_info("We don't want to turn on the air-conditioner automatically based on external tempearature, so ignoring.")
