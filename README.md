@@ -12,7 +12,7 @@ Here is what every option means:
 | `common_zone_switch`  | `string`     | Optional     | If your AC requires a common zone, specify the switch entity here, and the zone will always be on. This is an alternate approach to leaving the zone out of the list                         |
 | `force_auto_fan`      | `bool`       | False        | Whether the fan should be set to an auto mode.                          |
 | `auto_control_on_sensor_temperature` | `bool`     | False        | Whether the climate device could be turned on if a specific temperature is passed by the tigger sensor                           |
-| `trigger_temp_sensor` | `string`     | False        | An entity_id with a temperature value as state                           |
+| `trigger_temp_sensor` | `string`     | Required if setting auto control on sensor temperature is true       | An entity_id with a temperature value as state                           |
 | `trigger_temp_upper`  | `float`      | 31       | Temperature which if trigger sensor goes *above* will turn the air-con on                          |
 | `trigger_temp_lower`  | `float`      | 17        | Temperature which if trigger sensor goes *below* will turn the air-con on                          |
 | `zone`                | `object`     | **Required** | Zone objects that will be controlled                                    |
