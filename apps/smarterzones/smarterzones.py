@@ -28,12 +28,15 @@ class SmarterZones(hass.Hass):
             self.Common_Zone_Flag = False
             self.climatedevice = self.args.get('climatedevice')
             self.exterior_temperature = self.args.get('exteriortempsensor')
-            self.forceautofan = self.args.get('force_auto_fan', False)
-            self.auto_on_from_outside_temp = self.args.get('auto_control_on_outside_temperature', False)
-            self.TriggerTemperatureUpper = self.args.get('trigger_temp_upper', 31)
-            self.TriggerTemperatureLower = self.args.get('trigger_temp_lower', 17)
+            self.climate_entity = self.get_entity(self.climatedevice)
             self.listen_state(self.climate_device_change, self.climatedevice)
-            self.listen_state(self.outside_climate_change, self.exterior_temperature)
+            self.forceautofan = self.args.get('force_auto_fan', False)
+            self.auto_on_from_sensor_temp = self.args.get('auto_control_on_sensor_temperature', False)
+            if self.auto_on_from_sensor_temp:
+                self.trigger_temperature_sensor = self.args.get('trigger_temp_sensor')
+                self.TriggerTemperatureUpper = self.args.get('trigger_temp_upper', 31)
+                self.TriggerTemperatureLower = self.args.get('trigger_temp_lower', 17)
+                self.listen_state(self.trigger_climate_change, self.trigger_temperature_sensor)
             if self.forceautofan:
                 self.listen_state(self.climate_fan_change, self.climatedevice, attribute="fan_mode")
 
@@ -276,22 +279,22 @@ class SmarterZones(hass.Hass):
         if self.get_state(entity) == "off":
             self.turn_on(entity)
 
-    def outside_climate_change(self, entity, attribute, old, new, kwargs):
+    def trigger_climate_change(self, entity, attribute, old, new, kwargs):
         """Handle changes in the exterior temperature sensor."""
-        current_outdoor_temp = float(new)
-        old_outdoor_temp = float(old)
-        self.log_info(f"Exterior temperature changed from {old_outdoor_temp} to {current_outdoor_temp}")
-        if self.auto_on_from_outside_temp:
-            current_outdoor_temp = float(new)
-            if current_outdoor_temp > self.TriggerTemperatureUpper:
-                self.log_info("Exterior temperature is very high, consider turning on cooling")
-                self.climate_entity.call_service("set_hvac_mode", hvac_mode="cool")
-                self.climate_entity.call_service("turn_on")s
-            elif current_outdoor_temp < self.TriggerTemperatureLower:
-                self.log_info("Exterior temperature is very low, consider turning on heating")
-                self.climate_entity.call_service("set_hvac_mode", hvac_mode="heat")
+        current_trigger_temp = float(new)
+        old_trigger_temp = float(old)
+        self.climate_entity = self.get_entity(self.climatedevice)
+        self.log_info(f"Monitored temperature changed from {old_trigger_temp} to {current_trigger_temp}")
+        if self.auto_on_from_sensor_temp:
+            if current_trigger_temp > self.TriggerTemperatureUpper:
+                self.log_info("Temperature is very high, consider turning on cooling")
                 self.climate_entity.call_service("turn_on")
+                self.climate_entity.call_service("set_hvac_mode", hvac_mode="cool")
+            elif current_trigger_temp < self.TriggerTemperatureLower:
+                self.log_info("Temperature is very low, consider turning on heating")
+                self.climate_entity.call_service("turn_on")
+                self.climate_entity.call_service("set_hvac_mode", hvac_mode="heat")
             else:
-                self.log_info("Exterior temperature is moderate, no immediate action required")   
+                self.log_info("Temperature is moderate, no immediate action required")   
         else:
-            self.log_info("We don't want to turn on the air-conditioner automatically based on external tempearature, so ignoring.")
+            self.log_info("We don't want to turn on the thermostat automatically based on temperature, so ignoring.")
