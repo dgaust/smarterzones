@@ -49,13 +49,14 @@ A typical example of the configuration in the apps.yaml file will look like
 smarterzones:
   module: smarterzones
   class: smarterzones
-  climatedevice: climate.daikin_ac
-  common_zone_switch: switch.daikin_living
+  climatedevice: climate.doris
+  common_zone_switch: switch.doris_living
   exteriortempsensor: sensor.bellambi_temp
-  force_auto_fan: true
   trigger_temp_sensor: sensor.living_room_temperature
   trigger_temp_upper: 27
   trigger_temp_lower: 18
+  auto_control_on_sensor_temperature: false
+  force_auto_fan: true
   zones:
     - name: "A Smart Zone"
       zone_switch: switch.daikin_ac_a
