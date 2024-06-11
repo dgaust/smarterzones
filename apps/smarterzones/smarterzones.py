@@ -298,3 +298,18 @@ class SmarterZones(hass.Hass):
         self.log_info("Opening Common Zone")
         if self.get_state(entity) == "off":
             self.turn_on(entity)
+
+    def outside_climate_change(self, entity, attribute, old, new, kwargs):
+        """Handle changes in the exterior temperature sensor."""
+        current_outdoor_temp = float(new)
+        self.log_info(f"Exterior temperature changed to {current_outdoor_temp}")
+    
+        # Example logic to adjust climate control based on exterior temperature
+        if current_outdoor_temp > TriggerTemperatureUpper:
+            self.log_info("Exterior temperature is very high, consider turning on cooling")
+        # Insert logic to adjust interior climate based on high exterior temperature
+        elif current_outdoor_temp < TriggerTemperatureLower:
+            self.log_info("Exterior temperature is very low, consider turning on heating")
+        # Insert logic to adjust interior climate based on low exterior temperature
+        else:
+            self.log_info("Exterior temperature is moderate, no immediate action required")
