@@ -286,10 +286,12 @@ class SmarterZones(hass.Hass):
             if current_outdoor_temp > self.TriggerTemperatureUpper:
                 self.log_info("Exterior temperature is very high, consider turning on cooling")
                 self.climate_entity.call_service("set_hvac_mode", hvac_mode="cool")
+                self.climate_entity.call_service("turn_on")s
             elif current_outdoor_temp < self.TriggerTemperatureLower:
                 self.log_info("Exterior temperature is very low, consider turning on heating")
                 self.climate_entity.call_service("set_hvac_mode", hvac_mode="heat")
+                self.climate_entity.call_service("turn_on")
             else:
-                self.log_info("Exterior temperature is moderate, no immediate action required")
+                self.log_info("Exterior temperature is moderate, no immediate action required")   
         else:
             self.log_info("We don't want to turn on the air-conditioner automatically based on external tempearature, so ignoring.")
