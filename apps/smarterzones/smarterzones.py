@@ -10,7 +10,7 @@ class ACMODE(Enum):
     OTHER = 3
     OFF = 4
 
-class SmarterZones(hass.Hass):
+class smarterzones(hass.Hass):
     """
     SmarterZones is an AppDaemon app to manage climate zones using Home Assistant.
     """
@@ -19,6 +19,12 @@ class SmarterZones(hass.Hass):
     HEATING_OFFSET_DEFAULT = [0.3, 0.3]
     TriggerTemperatureUpper = 31
     TriggerTemperatureLower = 17
+
+    FAN_SPEEDS = {
+        "high": 5,   # Temperature difference greater than or equal to 5°C
+        "medium": 3, # Temperature difference between 3°C and 5°C
+        "low": 1     # Temperature difference between 1°C and 3°C
+    }
 
     def initialize(self):
         """Initialize the SmarterZones app."""
@@ -67,6 +73,13 @@ class SmarterZones(hass.Hass):
         except KeyError:
             self.log_info("No trigger threshold entity available")
 
+    def get_common_zone(self):
+        """Find the zone that matches the common zone switch."""
+        for zone in self.zones:
+            if zone["zone_switch"] == self.common_zone:
+                return zone
+        return None
+
     def setup_zone_listeners(self, zone):
         """Setup listeners for a zone."""
         self.listen_state(self.target_temp_change, zone['target_temp'])
@@ -91,8 +104,14 @@ class SmarterZones(hass.Hass):
     def climate_fan_change(self, entity, attribute, old, new, kwargs):
         """Handle changes in the climate device's fan mode."""
         is_on = self.get_state(entity)
-        if is_on != "off" and "auto" not in self.get_state(entity, attribute="fan_modes").lower():
-            self.call_service("climate/set_fan_mode", entity_id=self.climatedevice, fan_mode=f"{new}/Auto")
+        if is_on != "off" and "/auto" not in new.lower():
+            fan_modes = self.get_state(entity, attribute="fan_modes")
+            # if fan_modes and "auto" not in fan_modes.lower():
+            try:
+                self.log_info(f"Changing fan mode to {new}/Auto for {entity}")
+                self.climate_entity.call_service("set_fan_mode", fan_mode=f"{new}/Auto")
+            except Exception as e:
+                self.log_error(f"Error changing fan mode: {e}")
 
     def climate_device_change(self, entity, attribute, old, new, kwargs):
         """Handle changes in the climate device's state."""
@@ -133,7 +152,28 @@ class SmarterZones(hass.Hass):
         # Check if any zone other than the common zone is on
         zone_open = any(self.get_state(zone["zone_switch"]) == "on" for zone in self.zones if self.common_zone != zone["zone_switch"])
         common_zone_open = self.get_state(self.common_zone) == "on"
+
+        common_zone = self.get_common_zone()
+        if not common_zone:
+            self.log_error("Common zone configuration not found")
+            return
+
+
+        try:
+            common_zone_temperature = float(self.get_state(common_zone["local_tempsensor"]))
+            common_zone_target_temp = float(self.get_state(common_zone["target_temp"]))
+        except KeyError:
+            self.log_error("Common zone temperature sensor or target temperature not specified")
+            return
+
+        # Calculate temperature offsets
+        temperature_offsets = self.get_temperature_offsets(common_zone, self.get_state(self.climatedevice))
+        max_temp = common_zone_target_temp + temperature_offsets[0]
+        min_temp = common_zone_target_temp - temperature_offsets[1]
     
+        self.log_info(f"Common zone current temperature: {common_zone_temperature}")
+        self.log_info(f"Common zone desired temperature range: {min_temp} to {max_temp}")
+
         # If no other zones are open and the common zone is not open, open the common zone
         if not zone_open and not common_zone_open:
             self.log_info("All zones including common are closed, so opening the common zone")
@@ -143,11 +183,15 @@ class SmarterZones(hass.Hass):
             self.log_info("Zones are closed, but common is open, so it's good")
         # If at least one other zone is open and the common zone is open, close the common zone
         elif zone_open and common_zone_open:
-            self.log_info("At least one zone is open, so closing the Common Zone")
-            self.common_zone_close(entity)
+            if common_zone_temperature > max_temp or common_zone_temperature < min_temp:
+                self.log_info("At least one zone is open and common zone temperature is outside the desired range, so closing the Common Zone")
+                self.common_zone_close(entity)
+            else:
+                self.log_info("At least one zone is open, but common zone temperature is within the desired range, so keeping the Common Zone open")
         # If at least one other zone is open, log that the common zone will be controlled automatically
         else:
             self.log_info("At least one zone is open, so the Common Zone will be controlled automatically")
+
 
     def common_zone_close(self, entity):
         """Close the common zone."""
@@ -298,3 +342,54 @@ class SmarterZones(hass.Hass):
                 self.log_info("Temperature is moderate, no immediate action required")   
         else:
             self.log_info("We don't want to turn on the thermostat automatically based on temperature, so ignoring.")
+
+    def adjust_fan_speed(self, climate_device, current_temp, desired_temp):
+        """Adjust the fan speed of the climate device based on the temperature difference."""
+        temp_diff = abs(desired_temp - current_temp)
+    
+        if temp_diff >= self.FAN_SPEEDS["high"]:
+            fan_speed = "High"
+        elif temp_diff >= self.FAN_SPEEDS["medium"]:
+            fan_speed = "Medium"
+        elif temp_diff >= self.FAN_SPEEDS["low"]:
+            fan_speed = "Low"
+        else:
+            fan_speed = "Auto"  # Default to auto or lowest setting
+
+        self.log_info(f"Adjusting fan speed to {fan_speed} based on temperature difference of {temp_diff} degrees")
+    
+        # Set the new fan speed
+        self.climate_entity.call_service("set_fan_mode", fan_mode=fan_speed)
+
+    def adjust_target_temperature(self, climate_device, current_temp, desired_temp):
+        """Adjust the target temperature of the climate device to reach the desired temperature more quickly."""
+        max_boost = 5  # Maximum temperature adjustment (degrees)
+        min_boost = 1  # Minimum temperature adjustment (degrees)
+        threshold = 0.5  # Acceptable range around the desired temperature
+
+        # Calculate temperature difference
+        temp_diff = desired_temp - current_temp
+
+        # Determine the boost amount
+        if abs(temp_diff) > threshold:
+            boost_amount = max(min_boost, min(max_boost, abs(temp_diff)))
+        else:
+            boost_amount = 0
+
+        # Adjust target temperature based on heating or cooling mode
+        if temp_diff > 0:
+            # Heating
+            new_target_temp = desired_temp + boost_amount
+        else:
+            # Cooling
+            new_target_temp = desired_temp - boost_amount
+
+        new_target_temp = max(17, min(31, new_target_temp))
+
+        # Apply limits to ensure comfort and safety
+        new_target_temp = max(self.TriggerTemperatureLower, min(self.TriggerTemperatureUpper, new_target_temp))
+
+        self.log_info(f"Adjusting target temperature from {desired_temp} to {new_target_temp} to reach {current_temp} quickly")
+    
+        # Set the new target temperature
+        self.call_service("climate/set_temperature", entity_id=climate_device, temperature=new_target_temp)
