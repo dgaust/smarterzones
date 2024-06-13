@@ -168,8 +168,8 @@ class smarterzones(hass.Hass):
 
         # Calculate temperature offsets
         temperature_offsets = self.get_temperature_offsets(common_zone, self.get_state(self.climatedevice))
-        max_temp = common_zone_target_temp + temperature_offsets[0]
-        min_temp = common_zone_target_temp - temperature_offsets[1]
+        max_temp = common_zone_temperature + temperature_offsets[0]
+        min_temp = common_zone_temperature - temperature_offsets[1]
     
         self.log_info(f"Common zone current temperature: {common_zone_temperature}")
         self.log_info(f"Common zone desired temperature range: {min_temp} to {max_temp}")
