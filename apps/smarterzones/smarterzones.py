@@ -168,8 +168,8 @@ class smarterzones(hass.Hass):
 
         # Calculate temperature offsets
         temperature_offsets = self.get_temperature_offsets(common_zone, self.get_state(self.climatedevice))
-        max_temp = common_zone_temperature + temperature_offsets[0]
-        min_temp = common_zone_temperature - temperature_offsets[1]
+        max_temp = round(common_zone_temperature + temperature_offsets[0], 1)
+        min_temp = round(common_zone_temperature - temperature_offsets[1], 1)
     
         self.log_info(f"Common zone current temperature: {common_zone_temperature}")
         self.log_info(f"Common zone desired temperature range: {min_temp} to {max_temp}")
@@ -183,11 +183,11 @@ class smarterzones(hass.Hass):
             self.log_info("Zones are closed, but common is open, so it's good")
         # If at least one other zone is open and the common zone is open, close the common zone
         elif zone_open and common_zone_open:
-            if common_zone_temperature > max_temp or common_zone_temperature < min_temp:
-                self.log_info("At least one zone is open and common zone temperature is outside the desired range, so closing the Common Zone")
+            if common_zone_temperature < max_temp or common_zone_temperature > min_temp:
+                self.log_info("At least one zone is open and common zone temperature is within the desired range, so closing the Common Zone")
                 self.common_zone_close(entity)
             else:
-                self.log_info("At least one zone is open, but common zone temperature is within the desired range, so keeping the Common Zone open")
+                self.log_info("At least one zone is open, but common zone temperature is outside the desired range, so keeping the Common Zone open")
         # If at least one other zone is open, log that the common zone will be controlled automatically
         else:
             self.log_info("At least one zone is open, so the Common Zone will be controlled automatically")
