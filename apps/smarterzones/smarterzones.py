@@ -38,7 +38,9 @@ class smarterzones(hass.Hass):
             self.listen_state(self.climate_device_change, self.climatedevice)
             self.forceautofan = self.args.get('force_auto_fan', False)
             self.auto_on_from_sensor_temp = self.args.get('auto_control_on_sensor_temperature', False)
+            self.log_info(f"Automatically turn on climate device when temperature threshold reached: {self.auto_on_from_sensor_temp}")
             if self.auto_on_from_sensor_temp:
+                self.log_info("Setting up automatic control variables")
                 self.trigger_temperature_sensor = self.args.get('trigger_temp_sensor')
                 self.TriggerTemperatureUpper = self.args.get('trigger_temp_upper', 31)
                 self.TriggerTemperatureLower = self.args.get('trigger_temp_lower', 17)
@@ -58,6 +60,7 @@ class smarterzones(hass.Hass):
             for zone in self.zones:
                 self.setup_zone_listeners(zone)
                 self.automatically_manage_zone(zone)
+            z = self.find_max_deviation_zone()
         except Exception as ex:
             self.log_error(ex)
 
@@ -192,13 +195,11 @@ class smarterzones(hass.Hass):
         else:
             self.log_info("At least one zone is open, so the Common Zone will be controlled automatically")
 
-
     def common_zone_close(self, entity):
         """Close the common zone."""
         self.log_info("Closing Common Zone")
         if self.get_state(entity) == "on":
             self.turn_off(entity)
-
 
     def automatically_manage_zone(self, zone):
         """Automatically manage a zone based on its conditions and temperatures."""
@@ -393,3 +394,23 @@ class smarterzones(hass.Hass):
     
         # Set the new target temperature
         self.call_service("climate/set_temperature", entity_id=climate_device, temperature=new_target_temp)
+
+    def find_max_deviation_zone(self):
+        max_deviation = 0
+        zone_with_max_deviation = None
+        totalzonesopen = 0
+
+        for zone in self.zones: 
+            zone_state = self.get_state(zone['zone_switch'])
+            self.log_info(f"deviaton {zone['name']} is in {zone_state} state")         
+            if zone_state == 'on':
+                totalzonesopen += 1
+                current_temp = float(self.get_state(zone['local_tempsensor']))
+                desired_temp = float(self.get_state(zone['target_temp']))
+                deviation = abs(current_temp - desired_temp)
+                if deviation > max_deviation:
+                    max_deviation = deviation
+                    zone_with_max_deviation = zone
+        
+        self.log_info(f"Zone furthest from desired setpoint is {zone_with_max_deviation['name']} because desired temp is {desired_temp} but temperature is {current_temp} and {totalzonesopen} zones are open")
+        return zone_with_max_deviation
